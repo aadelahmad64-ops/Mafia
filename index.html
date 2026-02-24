@@ -6,71 +6,62 @@
 <style>
   body {background: #111; color: #fff; font-family: sans-serif; text-align: center;}
   h1 {color: red;}
+  input, button {padding: 10px; margin: 5px; font-size: 16px;}
   .hidden {display:none;}
-  button {padding: 10px 20px; margin: 10px; font-size: 16px;}
-  input {padding:5px; font-size:16px;}
-  #playersList {margin-top:10px;}
+  #playersList {margin-top: 10px;}
 </style>
 </head>
 <body>
 
 <h1>مافيا 2</h1>
-<p>لعبة محلية على الشبكة ! بدون إنترنت</p>
+<p>اكتب اسمك وكود الغرفة للانضمام</p>
 
-<div id="setup">
-  <button id="hostBtn">Host Game</button>
-  <button id="joinBtn">Join Game</button>
-  <div id="joinDiv" class="hidden">
-    <input type="text" id="roomCode" placeholder="كود الغرفة">
-    <input type="text" id="playerName" placeholder="اكتب اسمك">
-    <button id="joinGameBtn">انضمام</button>
-  </div>
+<div id="loginDiv">
+  <input type="text" id="playerName" placeholder="اسمك">
+  <input type="text" id="roomCode" placeholder="كود الغرفة">
+  <button id="joinBtn">انضمام</button>
 </div>
 
-<div id="game" class="hidden">
+<div id="gameDiv" class="hidden">
+  <h2>مرحبا <span id="myName"></span></h2>
   <p id="roleDisplay"></p>
-  <div id="playersList"></div>
+  <div id="mafiaList" class="hidden">
+    <p>المافيا:</p>
+    <ul id="mafiaMembers"></ul>
+  </div>
   <button id="voteBtn">تصويت</button>
 </div>
 
 <script>
-// نسخة أولية Local-only (بدون WebSocket) للتجربة
+// إعداد اللعبة
+const ROOM_CODE = "963";
+const MIN_PLAYERS = 5;
 let players = [];
-let roles = [];
-let myRole = '';
+let roles = {};
+let myName = '';
 let mafia = [];
-const minPlayers = 5;
-const roomCode = "963";
-
-document.getElementById('hostBtn').onclick = () => {
-  alert("انت الهوست. قل للشباب يدخلوا الكود: " + roomCode);
-  document.getElementById('setup').classList.add('hidden');
-  document.getElementById('game').classList.remove('hidden');
-  startGame();
-};
 
 document.getElementById('joinBtn').onclick = () => {
-  document.getElementById('joinDiv').classList.remove('hidden');
-};
+  const name = document.getElementById('playerName').value.trim();
+  const code = document.getElementById('roomCode').value.trim();
+  if(!name){ alert("اكتب اسمك"); return; }
+  if(code !== ROOM_CODE){ alert("كود الغرفة خطأ"); return; }
 
-document.getElementById('joinGameBtn').onclick = () => {
-  const code = document.getElementById('roomCode').value;
-  const name = document.getElementById('playerName').value;
-  if(code !== roomCode){alert("كود خاطئ"); return;}
-  if(!name){alert("اكتب اسمك"); return;}
-  players.push(name);
-  alert("تم الانضمام. انتظر بدء اللعبة.");
-  document.getElementById('setup').classList.add('hidden');
+  myName = name;
+  players.push(myName);
+
+  // توزيع أدوار عشوائي عند أول لاعب يدخل
+  if(players.length >= MIN_PLAYERS){
+    startGame();
+  } else {
+    alert("لازم يكون على الأقل "+MIN_PLAYERS+" لاعبين للبدء");
+  }
 };
 
 function startGame(){
-  if(players.length < minPlayers-1){ // -1 لأن الهوست محسوب
-    alert("لازم يكون على الأقل "+minPlayers+" لاعبين (انت والآخرين)");
-    return;
-  }
-  // توزيع الأدوار
+  // قائمة مؤقتة لتوزيع الأدوار
   let tempPlayers = [...players];
-  tempPlayers.push("الهوست"); // حساب الهوست
+
   // 2 مافيا
   for(let i=0;i<2;i++){
     let idx = Math.floor(Math.random()*tempPlayers.length);
@@ -78,24 +69,47 @@ function startGame(){
     mafia.push(tempPlayers[idx]);
     tempPlayers.splice(idx,1);
   }
+
   // محقق
   let idx = Math.floor(Math.random()*tempPlayers.length);
   roles[tempPlayers[idx]] = 'محقق';
   tempPlayers.splice(idx,1);
+
   // دكتور
   idx = Math.floor(Math.random()*tempPlayers.length);
   roles[tempPlayers[idx]] = 'دكتور';
   tempPlayers.splice(idx,1);
-  // الباقي مواطن
-  tempPlayers.forEach(p=>roles[p]='مواطن');
 
-  // عرض الأدوار للهوست فقط (تجربة أولية)
-  let display = "الأدوار:\n";
-  for(let p in roles){
-    display += p + ": " + roles[p] + "\n";
-  }
-  document.getElementById('roleDisplay').innerText = display;
+  // الباقي مواطنين
+  tempPlayers.forEach(p => roles[p] = 'مواطن');
+
+  showRole();
 }
+
+function showRole(){
+  document.getElementById('loginDiv').classList.add('hidden');
+  document.getElementById('gameDiv').classList.remove('hidden');
+  document.getElementById('myName').innerText = myName;
+  document.getElementById('roleDisplay').innerText = "دورك: " + roles[myName];
+
+  // لو المافيا
+  if(roles[myName] === 'مافيا'){
+    document.getElementById('mafiaList').classList.remove('hidden');
+    const ul = document.getElementById('mafiaMembers');
+    mafia.forEach(m => {
+      if(m !== myName) {
+        const li = document.createElement('li');
+        li.innerText = m;
+        ul.appendChild(li);
+      }
+    });
+  }
+}
+
+// التصويت (نسخة أولية)
+document.getElementById('voteBtn').onclick = () => {
+  alert("خاصية التصويت رح تتضاف لاحقاً في النسخة الكاملة");
+};
 </script>
 
 </body>
