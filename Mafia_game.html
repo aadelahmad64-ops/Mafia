@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>مافيا 2</title>
+<style>
+  body {background: #111; color: #fff; font-family: sans-serif; text-align: center;}
+  h1 {color: red;}
+  .hidden {display:none;}
+  button {padding: 10px 20px; margin: 10px; font-size: 16px;}
+  input {padding:5px; font-size:16px;}
+  #playersList {margin-top:10px;}
+</style>
+</head>
+<body>
+
+<h1>مافيا 2</h1>
+<p>لعبة محلية على الشبكة ! بدون إنترنت</p>
+
+<div id="setup">
+  <button id="hostBtn">Host Game</button>
+  <button id="joinBtn">Join Game</button>
+  <div id="joinDiv" class="hidden">
+    <input type="text" id="roomCode" placeholder="كود الغرفة">
+    <input type="text" id="playerName" placeholder="اكتب اسمك">
+    <button id="joinGameBtn">انضمام</button>
+  </div>
+</div>
+
+<div id="game" class="hidden">
+  <p id="roleDisplay"></p>
+  <div id="playersList"></div>
+  <button id="voteBtn">تصويت</button>
+</div>
+
+<script>
+// نسخة أولية Local-only (بدون WebSocket) للتجربة
+let players = [];
+let roles = [];
+let myRole = '';
+let mafia = [];
+const minPlayers = 5;
+const roomCode = "963";
+
+document.getElementById('hostBtn').onclick = () => {
+  alert("انت الهوست. قل للشباب يدخلوا الكود: " + roomCode);
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('game').classList.remove('hidden');
+  startGame();
+};
+
+document.getElementById('joinBtn').onclick = () => {
+  document.getElementById('joinDiv').classList.remove('hidden');
+};
+
+document.getElementById('joinGameBtn').onclick = () => {
+  const code = document.getElementById('roomCode').value;
+  const name = document.getElementById('playerName').value;
+  if(code !== roomCode){alert("كود خاطئ"); return;}
+  if(!name){alert("اكتب اسمك"); return;}
+  players.push(name);
+  alert("تم الانضمام. انتظر بدء اللعبة.");
+  document.getElementById('setup').classList.add('hidden');
+};
+
+function startGame(){
+  if(players.length < minPlayers-1){ // -1 لأن الهوست محسوب
+    alert("لازم يكون على الأقل "+minPlayers+" لاعبين (انت والآخرين)");
+    return;
+  }
+  // توزيع الأدوار
+  let tempPlayers = [...players];
+  tempPlayers.push("الهوست"); // حساب الهوست
+  // 2 مافيا
+  for(let i=0;i<2;i++){
+    let idx = Math.floor(Math.random()*tempPlayers.length);
+    roles[tempPlayers[idx]] = 'مافيا';
+    mafia.push(tempPlayers[idx]);
+    tempPlayers.splice(idx,1);
+  }
+  // محقق
+  let idx = Math.floor(Math.random()*tempPlayers.length);
+  roles[tempPlayers[idx]] = 'محقق';
+  tempPlayers.splice(idx,1);
+  // دكتور
+  idx = Math.floor(Math.random()*tempPlayers.length);
+  roles[tempPlayers[idx]] = 'دكتور';
+  tempPlayers.splice(idx,1);
+  // الباقي مواطن
+  tempPlayers.forEach(p=>roles[p]='مواطن');
+
+  // عرض الأدوار للهوست فقط (تجربة أولية)
+  let display = "الأدوار:\n";
+  for(let p in roles){
+    display += p + ": " + roles[p] + "\n";
+  }
+  document.getElementById('roleDisplay').innerText = display;
+}
+</script>
+
+</body>
+</html>
